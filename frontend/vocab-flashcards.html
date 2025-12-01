@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        .progress {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+        .card-container {
+            perspective: 1000px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 60px 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+            position: relative;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+        }
+        .card.flipped .card-front {
+            display: none;
+        }
+        .card.flipped .card-back {
+            display: block;
+        }
+        .card-front, .card-back {
+            text-align: center;
+        }
+        .card-back {
+            display: none;
+        }
+        .card-text {
+            font-size: 36px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 15px;
+            word-wrap: break-word;
+        }
+        .card-hint {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+        }
+        .card-meta {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: #666;
+            background: #f8f9fa;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            flex: 1;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-wrong {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-correct {
+            background: #28a745;
+            color: white;
+        }
+        .btn-flip {
+            background: #6c757d;
+            color: white;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+        }
+        .completion {
+            background: white;
+            border-radius: 12px;
+            padding: 60px 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        .completion h2 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .completion-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 30px 0;
+        }
+        .completion-stat {
+            text-align: center;
+        }
+        .completion-stat-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .completion-stat-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .btn-restart {
+            background: #007bff;
+            color: white;
+            padding: 12px 32px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">Loading...</div>
+        </div>
+
+        <div id="content">
+            <div class="loading">Loading flashcards...</div>
+        </div>
+    </div>
+
+    <script src="vocab-api.js"></script>
+    <script>
+        // Configuration - Update these values
+        const API_BASE_URL = 'http://localhost/index.php/api/vocab';
+        const API_KEY = null; // Set if authentication is enabled
+        const SESSION_ID = new Date().toISOString().split('T')[0]; // Today's date
+
+        const api = new VocabAPI(API_BASE_URL, API_KEY);
+        
+        let vocabulary = [];
+        let currentIndex = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let isFlipped = false;
+
+        async function loadVocabulary() {
+            try {
+                vocabulary = await api.getAll();
+                if (vocabulary.length === 0) {
+                    showError('No vocabulary entries found. Please add some vocabulary first.');
+                    return;
+                }
+                vocabulary.sort(() => Math.random() - 0.5);
+                showCard();
+            } catch (error) {
+                showError(`Failed to load vocabulary: ${error.message}`);
+            }
+        }
+
+        function showCard() {
+            if (currentIndex >= vocabulary.length) {
+                showCompletion();
+                return;
+            }
+
+            const vocab = vocabulary[currentIndex];
+            isFlipped = false;
+
+            const wordType = vocab.meta && vocab.meta.word_type 
+                ? `<div class="card-meta">${escapeHtml(vocab.meta.word_type)}</div>`
+                : '';
+
+            const content = `
+                <div class="card-container">
+                    <div class="card" id="card" onclick="flipCard()">
+                        ${wordType}
+                        <div class="card-front">
+                            <div class="card-text">${escapeHtml(vocab.lang_a)}</div>
+                            <div class="card-hint">Click to reveal translation</div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-text">${escapeHtml(vocab.lang_b)}</div>
+                            <div class="card-hint">Did you get it right?</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="buttons">
+                    <button class="btn-wrong" onclick="markAnswer(false)" id="btn-wrong" disabled>
+                        ✗ Incorrect
+                    </button>
+                    <button class="btn-flip" onclick="flipCard()" id="btn-flip">
+                        Show Answer
+                    </button>
+                    <button class="btn-correct" onclick="markAnswer(true)" id="btn-correct" disabled>
+                        ✓ Correct
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('content').innerHTML = content;
+            updateProgress();
+        }
+
+        function flipCard() {
+            if (isFlipped) return;
+            
+            isFlipped = true;
+            document.getElementById('card').classList.add('flipped');
+            document.getElementById('btn-flip').style.display = 'none';
+            document.getElementById('btn-wrong').disabled = false;
+            document.getElementById('btn-correct').disabled = false;
+        }
+
+        async function markAnswer(correct) {
+            const vocab = vocabulary[currentIndex];
+            
+            if (correct) {
+                correctCount++;
+            } else {
+                incorrectCount++;
+            }
+
+            try {
+                await api.updateSessionStats(vocab.id, SESSION_ID, correct);
+            } catch (error) {
+                console.error('Failed to update stats:', error);
+            }
+
+            currentIndex++;
+            showCard();
+        }
+
+        function updateProgress() {
+            const total = vocabulary.length;
+            const completed = currentIndex;
+            const percentage = (completed / total) * 100;
+
+            document.getElementById('progress-fill').style.width = percentage + '%';
+            document.getElementById('progress-text').textContent = 
+                `${completed} / ${total} cards completed`;
+        }
+
+        function showCompletion() {
+            const total = correctCount + incorrectCount;
+            const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+            const content = `
+                <div class="completion">
+                    <h2>Session Complete!</h2>
+                    <div class="completion-stats">
+                        <div class="completion-stat">
+                            <div class="completion-stat-value" style="color: #28a745;">${correctCount}</div>
+                            <div class="completion-stat-label">Correct</div>
+                        </div>
+                        <div class="completion-stat">
+                            <div class="completion-stat-value" style="color: #dc3545;">${incorrectCount}</div>
+                            <div class="completion-stat-label">Incorrect</div>
+                        </div>
+                    </div>
+                    <p style="font-size: 24px; color: #666; margin: 20px 0;">
+                        Score: ${percentage}%
+                    </p>
+                    <button class="btn-restart" onclick="location.reload()">
+                        Start New Session
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('content').innerHTML = content;
+            document.getElementById('progress-fill').style.width = '100%';
+            document.getElementById('progress-text').textContent = 'Completed!';
+        }
+
+        function showError(message) {
+            document.getElementById('content').innerHTML = `
+                <div class="error">${escapeHtml(message)}</div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Start
+        loadVocabulary();
+    </script>
+</body>
+</html>
