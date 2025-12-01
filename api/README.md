@@ -1,6 +1,6 @@
 # API
 
-REST API that powers the vocab trainer.
+REST API for the vocab trainer.
 
 ## Endpoints
 
@@ -18,7 +18,7 @@ Errors: `{ "error": "message" }`
 
 Copy `.env.example` to `.env` and edit with relevant information
 
-Then create the schema (see `sql/schema.sql`).
+Then create the schema (see `sql/schema.sql`). Mysql / MariaDB
 
 ## API quick reference
 
