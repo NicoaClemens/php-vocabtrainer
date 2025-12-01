@@ -29,9 +29,9 @@ If auth is enabled, pass a key:
 const api = new VocabAPI('http://localhost/index.php/api/vocab', 'your-api-key');
 ```
 
-## HTML widgets (iframe-ready)
+## HTML widgets (iframe)
 
-Each page is self-contained. Edit `API_BASE_URL` (and `API_KEY` if needed) at the top of the script block inside the file.
+Edit `API_BASE_URL` (and `API_KEY` if needed) at the top of the script block inside the file.
 
 - `vocab-quiz.html`: Type the translation, instant feedback.
 - `vocab-flashcards.html`: Flip cards, track right/wrong per day.
