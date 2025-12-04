@@ -2,18 +2,6 @@
 
 REST API for the vocab trainer.
 
-## Endpoints
-
-- GET `/api/vocab` — list all
-- GET `/api/vocab?id=1` — get one
-- POST `/api/vocab` — create `{ lang_a, lang_b, meta? }`
-- PUT `/api/vocab?id=1` — update `{ lang_a, lang_b, meta? }`
-- DELETE `/api/vocab?id=1` — delete
-
-Auth (optional): `Authorization: Bearer <API_KEY>`
-
-Errors: `{ "error": "message" }`
-
 ## Env
 
 Copy `.env.example` to `.env` and edit with relevant information
@@ -22,11 +10,11 @@ Then create the schema (see `sql/schema.sql`). Mysql / MariaDB
 
 ## API quick reference
 
-- GET `/api/vocab` — list all
-- GET `/api/vocab?id=1` — get one
-- POST `/api/vocab` — create `{ lang_a, lang_b, meta? }`
-- PUT `/api/vocab?id=1` — update `{ lang_a, lang_b, meta? }`
-- DELETE `/api/vocab?id=1` — delete
+- GET `/api/vocab` -> list all
+- GET `/api/vocab?id=1` -> get one
+- POST `/api/vocab` -> create `{ lang_a, lang_b, meta? }`
+- PUT `/api/vocab?id=1` -> update `{ lang_a, lang_b, meta? }`
+- DELETE `/api/vocab?id=1` -> delete
 
 Auth (optional): `Authorization: Bearer <API_KEY>`
 
